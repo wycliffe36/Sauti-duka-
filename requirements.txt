@@ -1,6 +1,8 @@
+
 streamlit
 librosa
 soundfile
 noisereduce
 numpy
-pydub
+audioread
+pyaudioop
