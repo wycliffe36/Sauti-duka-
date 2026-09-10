@@ -1,58 +1,55 @@
 import streamlit as st
-import io
+import librosa
+import soundfile as sf
+import noisereduce as nr
+import tempfile
+import os
 
 st.set_page_config(page_title="Sauti Duka", layout="centered")
 
-# Language toggle
 if "swahili" not in st.session_state:
     st.session_state.swahili = False
-
 def toggle_lang():
     st.session_state.swahili = not st.session_state.swahili
+st.button("🇰🇪 Switch to Swahili" if not st.session_state.swahili else "🇬🇧 Switch to English", on_click=toggle_lang)
 
-st.button(
-    "🇰🇪 Switch to Swahili" if not st.session_state.swahili else "🇬🇧 Switch to English",
-    on_click=toggle_lang
-)
+st.title("Sauti Duka - Voice Shop Assistant" if not st.session_state.swahili else "Sauti Duka - Msaidizi wa Duka")
 
-# Title
-if not st.session_state.swahili:
-    st.title("Sauti Duka - Voice Shop Assistant")
-    st.write("Upload any voice note (WhatsApp, Samsung Recorder) - m4a, opus, mp3, wav all work.")
-else:
-    st.title("Sauti Duka - Msaidizi wa Duka kwa Sauti")
-    st.write("Pakia sauti yoyote (WhatsApp, Samsung) - m4a, opus, mp3, wav zote zinafanya kazi.")
-
-# THE FIX: Accept ALL Samsung formats
 uploaded_file = st.file_uploader(
-    "Upload Voice Note / Pakia Sauti" if not st.session_state.swahili else "Pakia Sauti Yako",
-    type=["wav", "mp3", "m4a", "opus", "ogg", "aac", "w4a", "mp4"],
-    accept_multiple_files=False
+    "Upload Voice Note / Pakia Sauti",
+    type=["wav","mp3","m4a","opus","ogg","aac","mp4"],
 )
 
 if uploaded_file is not None:
-    st.success("File received! ✅" if not st.session_state.swahili else "Faili limepokelewa! ✅")
+    st.success("File received! ✅")
     
-    # Show audio player - this will play your Samsung recording
-    st.audio(uploaded_file, format='audio/m4a')
-    
-    st.info("Cleaning background noise..." if not st.session_state.swahili else "Inasafisha kelele...")
-    
-    # Demo for now - your AMD Whisper will go here
-    st.warning("Transcribing on AMD GPU..." if not st.session_state.swahili else "Inatafsiri kwenye AMD GPU...")
-    
-    # Simulated result - you will replace with real transcription later
-    if not st.session_state.swahili:
-        st.write("### Transcription:")
-        st.write("> 'Habari, nataka mchele kilo mbili'")
-        st.write("### Detected Intent: Order Rice 2kg")
-    else:
-        st.write("### Unukuzi:")
-        st.write("> 'Habari, nataka mchele kilo mbili'")
-        st.write("### Nia: Kuagiza Mchele kilo 2")
+    # Save uploaded file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as tmp:
+        tmp.write(uploaded_file.getvalue())
+        tmp_path = tmp.name
 
-else:
-    if not st.session_state.swahili:
-        st.info("👆 Tap 'Browse files' above and select your recording from Samsung folder")
-    else:
-        st.info("👆 Bonyeza 'Browse files' hapo juu na chagua rekodi yako")
+    # Load audio
+    y, sr = librosa.load(tmp_path, sr=16000)
+    
+    st.write("**Original (with noise):**")
+    st.audio(uploaded_file)
+    
+    with st.spinner("Cleaning background noise for real..."):
+        # Real noise reduction
+        cleaned = nr.reduce_noise(y=y, sr=sr, prop_decrease=0.9)
+        
+        # Save cleaned
+        cleaned_path = tmp_path.replace(".m4a", "_cleaned.wav")
+        sf.write(cleaned_path, cleaned, sr)
+    
+    st.write("**Cleaned (noise removed):**")
+    st.audio(cleaned_path)
+    st.success("Noise removed! Kelele imeondolewa!" if not st.session_state.swahili else "Kelele imeondolewa!")
+    
+    # Transcription placeholder - you will add Whisper here
+    st.write("**Ready for AMD Whisper transcription**")
+
+    # Cleanup
+    os.remove(tmp_path)
+    if os.path.exists(cleaned_path):
+        os.remove(cleaned_path)
