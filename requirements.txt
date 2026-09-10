@@ -1,5 +1,5 @@
 streamlit
-openai-whisper
-noisereduce
+librosa
 soundfile
-torch
+noisereduce
+numpy
