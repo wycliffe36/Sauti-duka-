@@ -4,34 +4,56 @@ import tempfile, os
 import librosa, soundfile as sf, noisereduce as nr
 
 st.set_page_config(page_title="Sauti Duka", page_icon="🛒")
-st.title("Sauti Duka - Final Version")
 
-# One recorder that works on Samsung Note 20 Chrome
-audio = st.audio_input("🎙️ Tap mic and speak: 'Habari nataka mchele'")
+# Keep Swahili button
+if "swahili" not in st.session_state:
+    st.session_state.swahili = False
+def toggle():
+    st.session_state.swahili = not st.session_state.swahili
+st.button("🇰🇪 Swahili" if not st.session_state.swahili else "🇬🇧 English", on_click=toggle)
 
-if audio is not None:
+st.title("Sauti Duka - Voice Shop Assistant")
+
+# 1. DIRECT RECORD
+st.subheader("🎙️ Option 1: Tap to Record")
+audio_record = st.audio_input("Tap mic, speak, then tap stop")
+
+# 2. UPLOAD BUTTON
+st.subheader("📁 Option 2: Upload Voice Note")
+uploaded_file = st.file_uploader(
+    "Upload / Pakia",
+    type=["wav","mp3","m4a","opus","ogg","aac","mp4","w4a"]
+)
+
+# Use whichever is used
+audio_source = audio_record if audio_record is not None else uploaded_file
+
+if audio_source is not None:
     st.success("File received! ✅")
-    st.write(f"File size: {len(audio.getvalue())/1000:.1f} KB")
+    st.write(f"Size: {len(audio_source.getvalue())/1024:.1f} KB")
     
-    st.write("**1. Original:**")
-    st.audio(audio)
-    
-    # Save temp
+    st.write("**TEST 1 - Original (Tap to play and test):**")
+    st.audio(audio_source)
+
+    # Save
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        tmp.write(audio.getvalue())
+        tmp.write(audio_source.getvalue())
         tmp_path = tmp.name
 
-    # Clean noise
-    with st.spinner("Removing background noise..."):
+    with st.spinner("Cleaning background noise..."):
         y, sr = librosa.load(tmp_path, sr=16000)
         cleaned = nr.reduce_noise(y=y, sr=sr, prop_decrease=0.9)
         cleaned_path = tmp_path.replace(".wav", "_clean.wav")
         sf.write(cleaned_path, cleaned, sr)
 
-    st.write("**2. Cleaned (No Noise):**")
+    st.write("**TEST 2 - Cleaned (No Background Noise - Tap to test):**")
     st.audio(cleaned_path)
-    st.success("Done! Noise removed ✅")
+    st.success("✅ Noise removed! Test both players above")
 
-    os.remove(tmp_path)
+    # Cleanup
+    try:
+        os.remove(tmp_path)
+    except:
+        pass
 else:
-    st.info("👆 Tap the mic above to record")
+    st.info("👆 Record with mic OR upload a file from Download folder to test")
