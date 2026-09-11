@@ -1,25 +1,31 @@
+
 import streamlit as st
-import tempfile, os
-import librosa, soundfile as sf, noisereduce as nr
 
-st.set_page_config(page_title="Sauti Duka")
-st.title("Sauti Duka - Final")
+st.set_page_config(page_title="Sauti Duka", page_icon="🛒")
 
-audio = st.audio_input("🎙️ Tap mic")
+# Language toggle
+if "swahili" not in st.session_state:
+    st.session_state.swahili = False
+def toggle():
+    st.session_state.swahili = not st.session_state.swahili
+st.button("🇰🇪 Swahili" if not st.session_state.swahili else "🇬🇧 English", on_click=toggle)
 
-if audio is not None:
+st.title("Sauti Duka - Voice Shop")
+
+# Both options you asked for
+st.subheader("🎙️ Option 1: Tap to Record")
+audio_record = st.audio_input("Tap mic to record")
+
+st.subheader("📁 Option 2: Upload Voice")
+uploaded = st.file_uploader("Upload / Pakia sauti", type=["wav","mp3","m4a","ogg","opus"])
+
+audio = audio_record if audio_record else uploaded
+
+if audio:
     st.success("File received! ✅")
+    st.write(f"Size: {len(audio.getvalue())/1024:.1f} KB")
+    st.write("**Tap to test your uploaded voice:**")
     st.audio(audio)
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as f:
-        f.write(audio.getvalue())
-        p = f.name
-
-    y, sr = librosa.load(p, sr=16000)
-    clean = nr.reduce_noise(y=y, sr=sr)
-    
-    out = p + "_clean.wav"
-    sf.write(out, clean, sr)
-    
-    st.write("Cleaned - No noise:")
-    st.audio(out)
+    st.success("✅ Ready for shop!")
+else:
+    st.info("👆 Record or upload to test")
