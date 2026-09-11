@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Sauti Duka - Permanent</title></head>
+<body style="font-family:sans-serif;padding:20px">
+<h1>🛒 Sauti Duka - Permanent Edition</h1>
+<p>This file will work forever. No server needed.</p>
+
+<h3>🎙️ Record</h3>
+<button id="rec">Start Recording</button>
+<audio id="player" controls style="display:block;margin:10px 0"></audio>
+
+<h3>📁 Upload Voice 002.m4a etc</h3>
+<input type="file" id="upload" accept="audio/*">
+
+<h3>🗣️ Voice to Text</h3>
+<input id="transcript" placeholder="Andika alichosema: nataka sukari" style="width:100%;padding:10px">
+<button onclick="searchShop()">Search Shop</button>
+
+<h3>🛒 Shop</h3>
+<div id="shop"></div>
+
+<h3>🧺 Cart</h3>
+<div id="cart">Empty</div>
+
+<script>
+let cart=[], products=[{name:"Sukari 1kg",price:150,key:"sukari"},{name:"Mafuta 1L",price:250,key:"mafuta"},{name:"Mchele",price:180,key:"mchele"},{name:"Sabuni",price:50,key:"sabuni"}];
+let recorder,chunks=[];
+let recBtn=document.getElementById('rec'), player=document.getElementById('player');
+recBtn.onclick=async()=>{
+ if(!recorder){
+   let stream=await navigator.mediaDevices.getUserMedia({audio:true});
+   recorder=new MediaRecorder(stream); recorder.ondataavailable=e=>chunks.push(e.data);
+   recorder.onstop=()=>{let blob=new Blob(chunks,{type:'audio/webm'}); player.src=URL.createObjectURL(blob); chunks=[];};
+   recorder.start(); recBtn.textContent="Stop";
+ }else{recorder.stop(); recorder=null; recBtn.textContent="Start Recording";}
+}
+document.getElementById('upload').onchange=e=>{player.src=URL.createObjectURL(e.target.files[0]);}
+function renderShop(filter=""){let html=""; products.filter(p=>!filter||p.key.includes(filter.toLowerCase())).forEach(p=>{html+=`<div>${p.name} - KSh ${p.price} <button onclick="addCart('${p.name}',${p.price})">Add</button></div>`}); document.getElementById('shop').innerHTML=html;}
+function addCart(n,p){cart.push({name:n,price:p}); let total=cart.reduce((s,i)=>s+i.price,0); document.getElementById('cart').innerHTML=cart.map(i=>i.name).join(', ')+`<br><b>Total KSh ${total}</b>`;}
+function searchShop(){renderShop(document.getElementById('transcript').value);}
+renderShop();
+</script>
+</body>
+</html>
